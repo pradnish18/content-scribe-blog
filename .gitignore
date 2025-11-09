@@ -33,3 +33,6 @@ server/.env.local
 # Database
 *.db
 *.sqlite
+
+# Local Netlify folder
+.netlify

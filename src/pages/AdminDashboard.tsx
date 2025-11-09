@@ -40,6 +40,7 @@ const AdminDashboard = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncError, setSyncError] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const navigate = useNavigate();
 
   // Monitor online/offline status
@@ -163,8 +164,26 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    loadPosts().finally(() => setIsLoading(false));
+    loadPosts().finally(() => {
+      setIsLoading(false);
+      setLastRefreshed(new Date());
+    });
   }, [navigate, isOnline]);
+  
+  // Auto-refresh posts every 30 seconds
+  useEffect(() => {
+    if (!isOnline) return;
+    
+    const intervalId = setInterval(() => {
+      if (!isSyncing) {
+        loadPosts(false).then(() => {
+          setLastRefreshed(new Date());
+        });
+      }
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [isOnline, isSyncing]);
 
   // Refresh posts when returning from edit
   useEffect(() => {
@@ -208,7 +227,7 @@ const AdminDashboard = () => {
   };
 
   const handleEditPost = (postId: string) => {
-    navigate(`/admin/post/${postId}/edit`);
+    navigate(`/admin/post/${postId}`);
   };
 
   const filteredPosts = posts.filter(post => {
@@ -267,6 +286,12 @@ const AdminDashboard = () => {
                     <span className="text-xs text-red-400">Offline</span>
                   </div>
                 )}
+                <div className="flex items-center gap-1 px-2 py-1 bg-slate-700/50 border border-slate-600/50 rounded-md">
+                  <RefreshCw className={`h-3 w-3 text-slate-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="text-xs text-slate-400">
+                    {isSyncing ? 'Refreshing...' : `Last updated: ${lastRefreshed.toLocaleTimeString()}`}
+                  </span>
+                </div>
                 {syncError && (
                   <Button
                     variant="ghost"

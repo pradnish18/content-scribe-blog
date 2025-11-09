@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: content-scribe-blog
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: JWT_SECRET
+        value: your_super_secret_jwt_key_change_me_12345_production
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dq5y3l61j
+      - key: CLOUDINARY_API_KEY
+        value: 583464728958175
+      - key: CLOUDINARY_API_SECRET
+        value: UJTsmgStNNOAYbQPVZn_g3EJHUU
+      - key: MONGO_URI
+        generateValue: true
+        # You'll need to update this with your MongoDB Atlas connection string

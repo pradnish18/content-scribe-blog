@@ -121,11 +121,14 @@ const Index = () => {
       } else if (retry >= maxRetries) {
         // Only show error toast if no cached data and all retries failed
         setSyncError(true);
-        toast({
-          title: "Unable to connect",
-          description: "Please check your internet connection.",
-          variant: "destructive",
-        });
+        // Only show toast if we're online - prevents duplicate error messages
+        if (navigator.onLine) {
+          toast({
+            title: "Unable to connect to server",
+            description: "Using offline mode. Server may be starting up...",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -201,7 +204,7 @@ const Index = () => {
 
   // on mount, if logged in, sync favorites from API
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('userToken');
     if (!token || !isOnline) return;
     
     (async () => {
@@ -284,7 +287,9 @@ const Index = () => {
                   className="pl-10 pr-4 py-2 w-64 rounded-full bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all"
                 />
               </div>
-              <button
+              <Button 
+                variant="ghost" 
+                size="sm"
                 onClick={() => {
                   if (!localStorage.getItem('userToken')) {
                     setShowAuthModal(true);
@@ -297,8 +302,8 @@ const Index = () => {
                   }
                 }}
               >
-                <Button variant="ghost" size="sm">About</Button>
-              </button>
+                About
+              </Button>
               {localStorage.getItem('userToken') && (
                 <Link to="/favorites">
                   <Button variant="outline" size="sm" className="gap-2">
@@ -307,21 +312,23 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
-              <button onClick={() => {
-                if (localStorage.getItem('userToken')) {
-                  // Show account menu or logout
-                  localStorage.removeItem('userToken');
-                  localStorage.removeItem('username');
-                  localStorage.removeItem('favorites');
-                  window.location.reload();
-                } else {
-                  setShowAuthModal(true);
-                }
-              }}>
-                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                  {localStorage.getItem('userToken') ? 'Sign out' : 'Sign in'}
-                </Button>
-              </button>
+              <Button 
+                size="sm" 
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                onClick={() => {
+                  if (localStorage.getItem('userToken')) {
+                    // Show account menu or logout
+                    localStorage.removeItem('userToken');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('favorites');
+                    window.location.reload();
+                  } else {
+                    setShowAuthModal(true);
+                  }
+                }}
+              >
+                {localStorage.getItem('userToken') ? 'Sign out' : 'Sign in'}
+              </Button>
             </div>
           </div>
         </div>
@@ -354,6 +361,7 @@ const Index = () => {
                   size="sm"
                   onClick={handleManualRefresh}
                   className="ml-4 border-blue-300 text-blue-700 hover:bg-blue-100"
+                  asChild={false}
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Refresh

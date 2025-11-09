@@ -15,6 +15,7 @@ import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Navigate } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -43,22 +44,21 @@ const App = () => (
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/auth" element={<AdminLogin />} />
           <Route path="/panel" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={
-            localStorage.getItem('adminAuth') ? <AdminDashboard /> : <Navigate to="/auth" replace />
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
           } />
           <Route path="/admin/post/new" element={
-            localStorage.getItem('adminAuth') ? (
-              <ErrorBoundary>
-                <PostEditor key="new" />
-              </ErrorBoundary>
-            ) : <Navigate to="/auth" replace />
+            <ProtectedRoute>
+              <PostEditor />
+            </ProtectedRoute>
           } />
-          <Route path="/admin/post/:id/edit" element={
-            localStorage.getItem('adminAuth') ? (
-              <ErrorBoundary>
-                <PostEditor key={window.location.pathname} />
-              </ErrorBoundary>
-            ) : <Navigate to="/auth" replace />
+          <Route path="/admin/post/:id" element={
+            <ProtectedRoute>
+              <PostEditor />
+            </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

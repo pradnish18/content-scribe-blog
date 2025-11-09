@@ -5,10 +5,13 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# API redirects - point to your backend
+# Update this with your actual backend URL after deployment
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "https://your-backend-url.onrender.com/api/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*"

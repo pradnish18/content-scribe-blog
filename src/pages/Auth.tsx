@@ -29,10 +29,10 @@ const Auth = () => {
         setError(data.error || 'Authentication failed');
       } else {
         const data = await res.json();
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminAuth', 'true');
+        localStorage.setItem('userToken', data.token);
+        localStorage.setItem('username', data.username);
         if (Array.isArray(data.favorites)) localStorage.setItem('favorites', JSON.stringify(data.favorites));
-        navigate('/admin/dashboard');
+        navigate('/');
       }
     } catch {
       setError('Network error');

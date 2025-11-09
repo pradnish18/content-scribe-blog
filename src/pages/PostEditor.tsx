@@ -85,7 +85,9 @@ const PostEditor = () => {
               return;
             }
           }
-        } catch {}
+        } catch (error) {
+          console.error('Failed to load post from API:', error);
+        }
         // Fallback to localStorage
         const savedPosts = localStorage.getItem('blogPosts');
         if (savedPosts) {
@@ -102,9 +104,10 @@ const PostEditor = () => {
       load();
     } else {
       // For new posts, set initial post to empty state
-      setInitialPost(post);
+      setInitialPost({ ...post });
       setUnsavedChanges(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEditing, navigate]);
 
   // Check for unsaved changes
@@ -142,19 +145,36 @@ const PostEditor = () => {
 
   const handleSave = async (newStatus?: 'published' | 'draft') => {
     setIsSaving(true);
+    
+    // Validate required fields
+    if (!post.title.trim()) {
+      alert('Please enter a title');
+      setIsSaving(false);
+      return;
+    }
+    
+    if (!post.slug.trim()) {
+      alert('Please enter a slug');
+      setIsSaving(false);
+      return;
+    }
+    
     // Generate excerpt if not provided
     const excerpt = post.excerpt || post.content.replace(/<[^>]*>/g, '').substring(0, 150) + '...';
     const payload = {
-      title: post.title,
-      slug: post.slug,
+      title: post.title.trim(),
+      slug: post.slug.trim().toLowerCase(),
       content: post.content,
       excerpt,
       featuredImage: post.featuredImage,
       status: newStatus || post.status,
     };
+    
     const token = localStorage.getItem('adminToken');
-    try {
-      if (token) {
+    
+    // Try API save if token exists
+    if (token) {
+      try {
         const res = await fetch(isEditing ? `/api/admin/posts/${id}` : '/api/admin/posts', {
           method: isEditing ? 'PUT' : 'POST',
           headers: {
@@ -163,6 +183,7 @@ const PostEditor = () => {
           },
           body: JSON.stringify(payload),
         });
+        
         if (res.ok) {
           const data = await res.json();
           const updatedPost: BlogPost = {
@@ -180,33 +201,56 @@ const PostEditor = () => {
           setInitialPost(updatedPost);
           setUnsavedChanges(false);
           setIsSaving(false);
+          
+          // Show success message
+          const statusText = newStatus === 'published' ? 'published' : 'saved as draft';
+          alert(`Post ${statusText} successfully!`);
+          
           navigate('/admin/dashboard');
           return;
         } else {
           const err = await res.json().catch(() => ({}));
-          alert(err.error || 'Save failed');
+          console.error('API save failed:', err);
+          // Continue to localStorage fallback
         }
+      } catch (error) {
+        console.error('Failed to save post to API:', error);
+        // Continue to localStorage fallback
       }
-    } catch {}
+    }
 
-    // Fallback to localStorage when API/token not available
-    const localUpdated: BlogPost = {
-      ...post,
-      id: post.id || Date.now().toString(),
-      excerpt,
-      status: newStatus || post.status,
-      publishedDate: newStatus === 'published' ? new Date().toISOString() : post.publishedDate,
-    };
-    const savedPosts = localStorage.getItem('blogPosts');
-    let posts = savedPosts ? JSON.parse(savedPosts) : [];
-    if (isEditing) posts = posts.map((p: BlogPost) => p.id === localUpdated.id ? localUpdated : p);
-    else posts.push(localUpdated);
-    localStorage.setItem('blogPosts', JSON.stringify(posts));
-    window.dispatchEvent(new Event('storage'));
-    setPost(localUpdated);
-    setUnsavedChanges(false);
-    setIsSaving(false);
-    navigate('/admin/dashboard');
+    // Fallback to localStorage when API/token not available or API failed
+    try {
+      const localUpdated: BlogPost = {
+        ...post,
+        id: post.id || Date.now().toString(),
+        excerpt,
+        status: newStatus || post.status,
+        publishedDate: newStatus === 'published' ? new Date().toISOString() : post.publishedDate,
+      };
+      const savedPosts = localStorage.getItem('blogPosts');
+      let posts = savedPosts ? JSON.parse(savedPosts) : [];
+      if (isEditing) {
+        posts = posts.map((p: BlogPost) => p.id === localUpdated.id ? localUpdated : p);
+      } else {
+        posts.push(localUpdated);
+      }
+      localStorage.setItem('blogPosts', JSON.stringify(posts));
+      window.dispatchEvent(new Event('storage'));
+      setPost(localUpdated);
+      setInitialPost(localUpdated);
+      setUnsavedChanges(false);
+      setIsSaving(false);
+      
+      const statusText = newStatus === 'published' ? 'published' : 'saved as draft';
+      alert(`Post ${statusText} to local storage! ${token ? 'Note: API save failed, using local storage.' : 'Note: No API token, using local storage.'}`);
+      
+      navigate('/admin/dashboard');
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+      alert('Failed to save post. Please try again.');
+      setIsSaving(false);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,7 +295,7 @@ const PostEditor = () => {
       setPost(prev => ({ ...prev, featuredImage: data.url }));
       
       setError(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Featured image upload error:', error);
       const errorMsg = 'Failed to upload featured image. Please try again.';
       setError(errorMsg);
@@ -320,7 +364,7 @@ const PostEditor = () => {
       } else {
         console.warn('Textarea not found for cursor positioning');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Content image upload error:', error);
       const errorMsg = 'Failed to upload content image. Please try again.';
       setError(errorMsg);

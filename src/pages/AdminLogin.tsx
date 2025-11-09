@@ -38,6 +38,8 @@ const AdminLogin = () => {
         // fallback to demo creds when API unavailable or rejects
         if (username === 'admin' && password === 'secure123') {
           localStorage.setItem('adminAuth', 'true');
+          // Create a dummy token for fallback mode (not valid for API but allows access)
+          localStorage.setItem('adminToken', 'fallback-token-' + Date.now());
           navigate('/admin/dashboard');
         } else {
           setAttempts(prev => prev + 1);
@@ -48,6 +50,8 @@ const AdminLogin = () => {
       // offline/dev fallback
       if (username === 'admin' && password === 'secure123') {
         localStorage.setItem('adminAuth', 'true');
+        // Create a dummy token for fallback mode (not valid for API but allows access)
+        localStorage.setItem('adminToken', 'fallback-token-' + Date.now());
         navigate('/admin/dashboard');
       } else {
         setError('Network error. Please try again.');
